@@ -4,6 +4,7 @@ import com.skyray16.userservice.entity.User;
 import com.skyray16.userservice.exception.UserServiceException;
 import com.skyray16.userservice.util.HibernateUtil;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 
 import java.util.List;
@@ -11,10 +12,22 @@ import java.util.Optional;
 
 public class UserDaoImpl implements UserDao {
 
+    private final SessionFactory sessionFactory;
+
+    // 1. Конструктор для реального приложения
+    public UserDaoImpl() {
+        this.sessionFactory = HibernateUtil.getSessionFactory();
+    }
+
+    // 2. Конструктор для тестов
+    public UserDaoImpl(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
+
     @Override
     public User save(User user) {
         Transaction transaction = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
             session.persist(user);
             transaction.commit();
@@ -27,7 +40,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public Optional<User> findById(Long id) {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
             User user = session.get(User.class, id);
             return Optional.ofNullable(user);
         } catch (Exception e) {
@@ -37,7 +50,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public List<User> findAll() {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
             return session.createQuery("FROM User", User.class).list();
         } catch (Exception e) {
             throw new UserServiceException("Ошибка при получении списка пользователей", e);
@@ -47,7 +60,7 @@ public class UserDaoImpl implements UserDao {
     @Override
     public User update(User user) {
         Transaction transaction = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
             User updatedUser = session.merge(user);
             transaction.commit();
@@ -61,7 +74,7 @@ public class UserDaoImpl implements UserDao {
     @Override
     public void deleteById(Long id) {
         Transaction transaction = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
             User user = session.get(User.class, id);
             if (user != null) {
