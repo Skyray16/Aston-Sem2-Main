@@ -3,3 +3,7 @@ target/
 *.iml
 .vscode/
 *.log
+dependency-reduced-pom.xml
+db.properties
+application.properties
+app.log

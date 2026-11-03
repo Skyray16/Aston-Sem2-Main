@@ -1,13 +1,13 @@
 package com.skyray16.userservice.service;
 
-import com.skyray16.userservice.entity.User;
+import com.skyray16.userservice.dto.UserRequestDto;
+import com.skyray16.userservice.dto.UserResponseDto;
 import java.util.List;
-import java.util.Optional;
 
 public interface UserService {
-    User createUser(User user);
-    Optional<User> getUserById(Long id);
-    List<User> getAllUsers();
-    User updateUser(User user);
+    UserResponseDto createUser(UserRequestDto dto);
+    UserResponseDto getUserById(Long id);
+    List<UserResponseDto> getAllUsers();
+    UserResponseDto updateUser(Long id, UserRequestDto dto);
     void deleteUser(Long id);
 }
