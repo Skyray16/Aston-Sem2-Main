@@ -3,6 +3,8 @@ package com.skyray16.userservice.service;
 import com.skyray16.userservice.dto.UserRequestDto;
 import com.skyray16.userservice.dto.UserResponseDto;
 import com.skyray16.userservice.entity.User;
+import com.skyray16.userservice.event.UserEvent;
+import com.skyray16.userservice.event.UserEventProducer;
 import com.skyray16.userservice.exception.UserNotFoundException;
 import com.skyray16.userservice.repository.UserRepository;
 import org.slf4j.Logger;
@@ -17,11 +19,13 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
 
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+    
     private final UserRepository userRepository;
+    private final UserEventProducer eventProducer;
 
-    // Ручной конструктор для внедрения зависимости (вместо Lombok)
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, UserEventProducer eventProducer) {
         this.userRepository = userRepository;
+        this.eventProducer = eventProducer;
     }
 
     @Override
@@ -35,6 +39,10 @@ public class UserServiceImpl implements UserService {
         
         User user = new User(dto.name(), dto.email(), dto.age());
         User saved = userRepository.save(user);
+        
+        // === ОТПРАВЛЯЕМ СОБЫТИЕ В KAFKA ===
+        eventProducer.sendUserEvent(new UserEvent(saved.getEmail(), "CREATED"));
+        
         return mapToDto(saved);
     }
 
@@ -58,7 +66,6 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
         
-        // Проверяем, не занят ли новый email другим пользователем
         if (!user.getEmail().equals(dto.email()) && userRepository.findByEmail(dto.email()).isPresent()) {
             throw new IllegalArgumentException("Пользователь с таким email уже существует");
         }
@@ -73,13 +80,14 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new UserNotFoundException("Пользователь не найден");
-        }
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("Пользователь не найден"));
+        
         userRepository.deleteById(id);
+        
+        eventProducer.sendUserEvent(new UserEvent(user.getEmail(), "DELETED"));
     }
 
-    // Преобразование Entity -> DTO
     private UserResponseDto mapToDto(User user) {
         return new UserResponseDto(
                 user.getId(), 

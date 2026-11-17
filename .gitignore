@@ -1,9 +1,12 @@
+# Maven
 target/
+dependency-reduced-pom.xml
+
+# IntelliJ IDEA / VS Code
 .idea/
 *.iml
 .vscode/
+
+# Логи
 *.log
-dependency-reduced-pom.xml
-db.properties
-application.properties
 app.log
